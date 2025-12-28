@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bolão | Mega Sena</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <style>
+        :root { 
+            --primary: #209869; 
+            --primary-light: #26d08b; 
+            --bg: #0f172a; 
+            --card-bg: #1e293b; 
+            --text: #f8fafc; 
+            --text-dim: #94a3b8;
+        }
+        
+        body { 
+            background-color: var(--bg); 
+            color: var(--text); 
+            font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            margin: 0; 
+            padding: 20px; 
+            box-sizing: border-box; 
+        }
+        
+        .container { 
+            width: 100%; 
+            max-width: 500px; 
+            background: var(--card-bg); 
+            padding: 30px; 
+            border-radius: 24px; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5); 
+            border: 1px solid rgba(255,255,255,0.1); 
+        }
+        
+        h1 { text-align: center; color: var(--primary-light); margin-bottom: 5px; font-size: 24px; }
+        
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] { 
+            -moz-appearance: textfield; 
+            appearance: none; 
+        }
+
+        .step { display: none; }
+        .step.active { display: block; animation: fadeIn 0.5s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        label { display: block; margin: 15px 0 5px; color: var(--text-dim); font-size: 14px; }
+        input { 
+            width: 100%; 
+            padding: 14px; 
+            background: #0f172a; 
+            border: 1px solid #334155; 
+            border-radius: 12px; 
+            color: white; 
+            font-size: 16px; 
+            box-sizing: border-box; 
+            outline: none; 
+            transition: border-color 0.3s;
+        }
+        input:focus { border-color: var(--primary-light); }
+        
+        .bloco-jogo { 
+            background: rgba(255,255,255,0.03); 
+            padding: 15px; 
+            border-radius: 15px; 
+            margin-bottom: 20px; 
+            border: 1px solid #334155; 
+        }
+        .bloco-jogo h4 { margin: 0 0 10px 0; color: var(--primary-light); font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .grid-numeros { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+        .num-input { 
+            text-align: center; 
+            padding: 10px 0 !important; 
+            font-weight: bold; 
+            border-color: #475569; 
+        }
+
+        .btn { 
+            width: 100%; 
+            padding: 16px; 
+            background: var(--primary); 
+            color: white; 
+            border: none; 
+            border-radius: 12px; 
+            font-weight: bold; 
+            font-size: 16px; 
+            cursor: pointer; 
+            transition: 0.3s; 
+            margin-top: 10px; 
+        }
+        .btn:hover { background: var(--primary-light); transform: translateY(-2px); }
+        
+        .btn-random {
+            background: #475569;
+            margin-bottom: 15px;
+            font-size: 14px;
+            padding: 10px;
+        }
+        .btn-random:hover { background: #64748b; }
+
+        .btn:disabled { background: #475569; cursor: not-allowed; }
+        
+        .pix-box { 
+            background: #f8fafc; 
+            color: #0f172a; 
+            padding: 15px; 
+            border-radius: 12px; 
+            text-align: center; 
+            font-weight: bold; 
+            margin: 15px 0; 
+            cursor: pointer; 
+            border: 2px solid transparent;
+            transition: 0.3s;
+        }
+        .pix-box:active { border-color: var(--primary); }
+        .valor-total { color: var(--primary-light); font-weight: 800; font-size: 22px; text-align: center; margin: 15px 0; }
+        
+        footer { text-align: center; margin-top: 25px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>BOLÃO MEGA SENA</h1>
+    <p style="text-align:center; font-size: 13px; color: #94a3b8; margin-top: 0;">Regra: 1 Cota = 5 Jogos de 6 números</p>
+    
+    <div id="step1" class="step active">
+        <label>Nome Completo</label>
+        <input type="text" id="nome" placeholder="Seu nome">
+        
+        <label>WhatsApp</label>
+        <input type="tel" id="tel" placeholder="(00) 00000-0000" maxlength="15">
+
+        <label>Quantidade de Cotas</label>
+        <input type="number" id="cotas" value="1" min="1" oninput="atualizarValorTotal()">
+        
+        <div class="valor-total" id="txtTotal">Total: R$ 30,00</div>
+        
+        <button class="btn" onclick="proximoPasso()">MONTAR MEUS JOGOS</button>
+    </div>
+
+    <div id="step2" class="step">
+        <h3 style="text-align:center; margin-bottom: 10px;">Digite seus números:</h3>
+        <button class="btn btn-random" onclick="gerarNumerosAleatorios()">🎲 GERAR JOGOS ALEATÓRIOS</button>
+        <div id="areaJogos"></div>
+        <button class="btn" id="btnFinalizar" onclick="enviarParaPlanilha()">CONFIRMAR E FINALIZAR</button>
+    </div>
+
+    <div id="step3" class="step">
+        <h2 style="text-align:center; color: var(--primary-light)">Tudo pronto! 🍀</h2>
+        <p style="text-align:center; color: #94a3b8;">Sua reserva foi enviada. Realize o pagamento PIX para confirmar:</p>
+        <div class="pix-box" onclick="copiarPix()">
+            SUA-CHAVE-PIX-AQUI@EMAIL.COM<br>
+            <small>(Toque para copiar a chave)</small>
+        </div>
+        <p style="text-align:center; font-size: 12px; color: #94a3b8;">Após o pagamento, envie o comprovante ao organizador.</p>
+    </div>
+
+    <footer>
+        <p style="color: var(--text-dim); font-size: 0.8rem;">&copy; 2025 | Maciel Poppe</p>
+    </footer>
+</div>
+
+<script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwKW-gjWFKMwf-i_puZwg3fS4r6x8N9xl9lY4pcupC5FWPTDdqO7t_wwPhuF3BATg_R-w/exec"; 
+    const PRECO_COTA = 30.00;
+    const CHAVE_PIX = "SUA-CHAVE-PIX-AQUI@EMAIL.COM";
+
+    document.getElementById('tel').addEventListener('input', (e) => {
+        let val = e.target.value.replace(/\D/g, '').match(/(\d{0,2})(\d{0,5})(\d{0,4})/);
+        e.target.value = !val[2] ? val[1] : '(' + val[1] + ') ' + val[2] + (val[3] ? '-' + val[3] : '');
+    });
+
+    function atualizarValorTotal() {
+        const qtd = document.getElementById('cotas').value;
+        const total = qtd * PRECO_COTA;
+        document.getElementById('txtTotal').innerText = `Total: R$ ${total.toFixed(2).replace('.',',')}`;
+    }
+
+    function proximoPasso() {
+        const nome = document.getElementById('nome').value;
+        const tel = document.getElementById('tel').value;
+        const cotas = document.getElementById('cotas').value;
+
+        if(!nome || tel.length < 14) {
+            alert("Por favor, preencha seu nome e WhatsApp corretamente.");
+            return;
+        }
+
+        const area = document.getElementById('areaJogos');
+        area.innerHTML = "";
+        const totalJogos = cotas * 5;
+
+        for(let i = 1; i <= totalJogos; i++) {
+            area.innerHTML += `
+                <div class="bloco-jogo">
+                    <h4>Jogo #${i}</h4>
+                    <div class="grid-numeros">
+                        ${[1,2,3,4,5,6].map(n => `
+                            <input type="number" 
+                                   class="num-input j-${i}" 
+                                   placeholder="00"
+                                   oninput="pularProximo(this, ${i})">
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        document.getElementById('step1').classList.remove('active');
+        document.getElementById('step2').classList.add('active');
+        window.scrollTo(0,0);
+    }
+
+    function gerarNumerosAleatorios() {
+        const cotas = document.getElementById('cotas').value;
+        const totalJogos = cotas * 5;
+
+        for (let i = 1; i <= totalJogos; i++) {
+            let numeros = [];
+            while (numeros.length < 6) {
+                let r = Math.floor(Math.random() * 60) + 1;
+                if (!numeros.includes(r)) numeros.push(r);
+            }
+            numeros.sort((a, b) => a - b);
+            
+            const inputs = document.querySelectorAll(`.j-${i}`);
+            inputs.forEach((input, index) => {
+                let num = numeros[index];
+                input.value = num < 10 ? '0' + num : num;
+            });
+        }
+    }
+
+    function pularProximo(input, jogoId) {
+        if(input.value.length >= 2) {
+            if(parseInt(input.value) > 60) input.value = 60;
+            if(parseInt(input.value) < 1) input.value = "01";
+            
+            let inputsDoJogo = document.querySelectorAll(`.j-${jogoId}`);
+            for(let i = 0; i < inputsDoJogo.length; i++) {
+                if(inputsDoJogo[i] === input && inputsDoJogo[i+1]) {
+                    inputsDoJogo[i+1].focus();
+                    break;
+                }
+            }
+        }
+    }
+
+    async function enviarParaPlanilha() {
+        const btn = document.getElementById('btnFinalizar');
+        const nome = document.getElementById('nome').value;
+        const cotas = document.getElementById('cotas').value;
+        const totalJogos = cotas * 5;
+        let listaJogosFormatados = [];
+
+        for(let i = 1; i <= totalJogos; i++) {
+            let inputs = document.querySelectorAll(`.j-${i}`);
+            let numeros = Array.from(inputs)
+                               .map(inp => parseInt(inp.value))
+                               .filter(n => !isNaN(n));
+
+            if(numeros.length < 6) {
+                alert(`Preencha todos os números do Jogo #${i}`);
+                return;
+            }
+            if(new Set(numeros).size !== 6) {
+                alert(`Você repetiu números no Jogo #${i}. Verifique!`);
+                return;
+            }
+
+            numeros.sort((a, b) => a - b);
+            listaJogosFormatados.push(numeros.map(n => n < 10 ? '0'+n : n).join("-"));
+        }
+
+        btn.disabled = true;
+        btn.innerText = "REGISTRANDO...";
+
+        const dadosParaEnviar = {
+            nome: nome,
+            telefone: document.getElementById('tel').value,
+            cotas: cotas,
+            valor: (cotas * PRECO_COTA),
+            jogos: listaJogosFormatados.join(" | ")
+        };
+
+        try {
+            await fetch(SCRIPT_URL, { 
+                method: "POST", 
+                mode: "no-cors", 
+                body: JSON.stringify(dadosParaEnviar) 
+            });
+
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+            document.getElementById('step2').classList.remove('active');
+            document.getElementById('step3').classList.add('active');
+        } catch (error) {
+            alert("Erro ao enviar. Verifique sua conexão.");
+            btn.disabled = false;
+            btn.innerText = "CONFIRMAR E FINALIZAR";
+        }
+    }
+
+    function copiarPix() {
+        navigator.clipboard.writeText(CHAVE_PIX);
+        alert("Chave PIX copiada com sucesso!");
+    }
+</script>
+
+</body>
+</html>
